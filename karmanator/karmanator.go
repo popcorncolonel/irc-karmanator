@@ -33,20 +33,58 @@ func getSettings() IrcSettings {
     return ircObj
 }
 
+func writeKarmaMapToFile(karmaMap map[string]map[string]int) {
+	contents, _ := yaml.Marshal(&karmaMap)
+	_ = ioutil.WriteFile("karma.yaml", contents, 0666)
+}
+
+func getKarmaMap() map[string]map[string]int { 
+	m := make(map[string]map[string]int)
+	data, _ := ioutil.ReadFile("karma.yaml")
+	err := yaml.Unmarshal(data, &m)
+	if err != nil {
+		fmt.Printf("error un-yaml-ing karma.yaml!!: %+v", err)
+		return nil
+	} else {
+		return m
+	}
+
+}	
+
 func displayKarma(con *irc.Connection, name string, channel string) {
 	// Get karma from dict
+	karmaMap := getKarmaMap()
+	name = strings.ToLower(name)
+
 	// Send privmsg to channel 
+	msg := fmt.Sprintf(
+		"Karma for %v: %v (++: %v | --: %v | +-: %v)",
+		name,
+		karmaMap[name]["++"] - karmaMap[name]["--"],
+		karmaMap[name]["++"],
+		karmaMap[name]["--"],
+		karmaMap[name]["+-"],
+	)	
+	con.Privmsg(channel, msg)
 }
 
 func addKarma(name string, karmaType string) {
+	name = strings.ToLower(name)
 	// karmaType is either "++", "--", or "+-"
-
+	karmaMap := getKarmaMap()
+	if len(karmaMap[name]) == 0 {
+		karmaMap[name] = make(map[string]int)
+	}
+	karmaMap[name][karmaType] += 1
+	writeKarmaMapToFile(karmaMap)
 }
 
 func getCallback(con *irc.Connection) func(*irc.Event) {
 	return func (e *irc.Event) {
 		msg := e.Message()
 		channel := e.Arguments[0]
+		sender := e.Nick
+
 		words := strings.Split(msg, " ")
 		matched, _ := regexp.MatchString("^!karma [a-zA-Z0-9]+$", msg) 
 		if matched {
@@ -58,16 +96,19 @@ func getCallback(con *irc.Connection) func(*irc.Event) {
 			if plusPlusMatched {
 				nameToAward := word[:len(word)-2]
 				addKarma(nameToAward, "++")
+				con.Privmsg(channel, sender + ": Gave ++ to " + nameToAward)
 			}
 			plusMinusMatched, _ := regexp.MatchString("^[a-zA-Z0-9]+\\+-$", word)
 			if plusMinusMatched {
 				nameToAward := word[:len(word)-2]
 				addKarma(nameToAward, "+-")
+				con.Privmsg(channel, sender + ": Gave +- to " + nameToAward)
 			}
 			minusMinusMatched, _ := regexp.MatchString("^[a-zA-Z0-9]+--$", word)
 			if minusMinusMatched {
 				nameToAward := word[:len(word)-2]
 				addKarma(nameToAward, "--")
+				con.Privmsg(channel, sender + ": Gave -- to " + nameToAward)
 			}
 		}
 	}
