@@ -1,3 +1,9 @@
+/*
+TODO:
+- Make channel be a list of channels to join
+- Get it on AWS
+*/
+
 package main
 
 import (
