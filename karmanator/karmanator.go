@@ -7,6 +7,7 @@ import (
     "gopkg.in/yaml.v2"
     "io/ioutil"
     "strings"
+    "sort"
 	"regexp"
 )
 
@@ -17,6 +18,36 @@ type IrcSettings struct {
 	Server string
 	Channel string
 	Port int
+}
+type KarmaObj struct {
+	name string
+	rankings map[string]int
+}
+type KarmaList []KarmaObj
+
+func (k KarmaList) Len() int {
+	return len(k)
+}
+
+func (k KarmaList) Swap(i, j int) {
+	k[i], k[j] = k[j], k[i]
+}
+
+func (k KarmaList) Less(i, j int) bool {
+	totalKarmaI := k[i].rankings["++"] - k[i].rankings["--"]
+	totalKarmaJ := k[j].rankings["++"] - k[j].rankings["--"]
+	// > because we want greatest to be first
+	return totalKarmaI > totalKarmaJ
+}
+
+func toKarmaList(karmaMap map[string]map[string]int) KarmaList {
+	list := make(KarmaList, len(karmaMap), len(karmaMap))
+	i := 0
+	for key, val := range karmaMap {
+		list[i] = KarmaObj{key, val}
+		i++
+	}
+	return list
 }
 
 func getSettings() IrcSettings {
@@ -48,8 +79,23 @@ func getKarmaMap() map[string]map[string]int {
 	} else {
 		return m
 	}
+}
 
-}	
+func displayTopKarma(con *irc.Connection, channel string) {
+	// Get karma from dict
+	karmaMap := getKarmaMap()
+	karmaList := toKarmaList(karmaMap)
+	if len(karmaList) < 3 {
+		return
+	}
+	sort.Sort(karmaList)
+	msg := fmt.Sprintf("Top 3 karma: %v (%v), %v (%v), %v (%v)", 
+		karmaList[0].name, karmaList[0].rankings["++"] - karmaList[0].rankings["--"],
+		karmaList[1].name, karmaList[1].rankings["++"] - karmaList[1].rankings["--"],
+		karmaList[2].name, karmaList[2].rankings["++"] - karmaList[2].rankings["--"],
+	)
+	con.Privmsg(channel, msg)
+}
 
 func displayKarma(con *irc.Connection, name string, channel string) {
 	// Get karma from dict
@@ -89,6 +135,11 @@ func getCallback(con *irc.Connection) func(*irc.Event) {
 		matched, _ := regexp.MatchString("^!karma [a-zA-Z0-9]+$", msg) 
 		if matched {
 			displayKarma(con, words[1], channel)
+			return
+		}
+		matched, _ = regexp.MatchString("^!topkarma$", msg) 
+		if matched {
+			displayTopKarma(con, channel)
 			return
 		}
 		for _, word := range words {
