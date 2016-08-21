@@ -6,9 +6,10 @@ import (
 )
 
 func GetConnection(
-    server string, 
-    port int, 
-    nick, user, password, roomName string,
+    server string,
+    port int,
+    nick, user, password string,
+    roomNames []string,
 ) *irc.Connection {
     con := irc.IRC(nick, user)
     con.Password = password
@@ -19,10 +20,12 @@ func GetConnection(
     } else {
         fmt.Println("Connection successful.")
     }
-    con.AddCallback("001", func (e *irc.Event) {
+    con.AddCallback("001", func(e *irc.Event) {
         fmt.Println("Got welcome message. Connecting...")
-        con.Join("#" + roomName)
-        fmt.Println("Connected.")
+        for _, roomName := range roomNames {
+            con.Join("#" + roomName)
+            fmt.Println(fmt.Sprintf("Connected to %v.", roomName))
+        }
     })
     return con
 }
