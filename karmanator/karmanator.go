@@ -129,7 +129,7 @@ func getCallback(con *irc.Connection) func(*irc.Event) {
     return func(e *irc.Event) {
         msg := e.Message()
         channel := e.Arguments[0]
-        sender := e.Nick
+        //sender := e.Nick
 
         words := strings.Split(msg, " ")
         matched, _ := regexp.MatchString("^!karma [a-zA-Z0-9]+$", msg)
