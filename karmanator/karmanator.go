@@ -147,19 +147,19 @@ func getCallback(con *irc.Connection) func(*irc.Event) {
             if plusPlusMatched {
                 nameToAward := word[:len(word)-2]
                 addKarma(nameToAward, "++")
-                con.Privmsg(channel, sender+": Gave ++ to "+nameToAward)
+                //con.Privmsg(channel, sender+": Gave ++ to "+nameToAward)
             }
             plusMinusMatched, _ := regexp.MatchString("^[a-zA-Z0-9]+\\+-$", word)
             if plusMinusMatched {
                 nameToAward := word[:len(word)-2]
                 addKarma(nameToAward, "+-")
-                con.Privmsg(channel, sender+": Gave +- to "+nameToAward)
+                //con.Privmsg(channel, sender+": Gave +- to "+nameToAward)
             }
             minusMinusMatched, _ := regexp.MatchString("^[a-zA-Z0-9]+--$", word)
             if minusMinusMatched {
                 nameToAward := word[:len(word)-2]
                 addKarma(nameToAward, "--")
-                con.Privmsg(channel, sender+": Gave -- to "+nameToAward)
+                //con.Privmsg(channel, sender+": Gave -- to "+nameToAward)
             }
         }
     }
